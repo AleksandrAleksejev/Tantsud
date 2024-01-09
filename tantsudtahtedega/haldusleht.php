@@ -24,15 +24,16 @@ if(isset($_REQUEST["paarinimi"]) && !empty($_REQUEST["paarinimi"]) && isAdmin())
     //$yhendus->close();
 }
 if(isset($_REQUEST["komment"])){
-    if (isset($_REQUEST["uuskomment"]) && !empty($_REQUEST["uuskomment"])){
+    if(!empty($_REQUEST["uuskomment"])){
         global $yhendus;
-        $kask = $yhendus->prepare("Update tantsud SET kommentaarid= CONCAT(kommentaarid, ?) WHERE id=?");
-        $kommentplus = $_REQUEST["uuskomment"] . "\n";
+        $kask = $yhendus->prepare("UPDATE tantsud SET komentaarid=CONCAT(komentaarid, ?) WHERE id=?");
+        $kommentplus=$_REQUEST["uuskomment"]."\n";
         $kask->bind_param("si", $kommentplus, $_REQUEST["komment"]);
         $kask->execute();
-
+        header("Location: $_SERVER[PHP_SELF]");
+        $yhendus->close();
+        //exit();
     }
-
 }
 
 function isAdmin(){
@@ -104,7 +105,7 @@ function isAdmin(){
         border: 1px solid;
     }
     table {
-        width: 100%;
+        width: 50%;
     }
     table {
         border-collapse: collapse;
@@ -133,36 +134,29 @@ if(isset($_SESSION['kasutaja'])){
 
     </tr>
 <?php
-    global $yhendus;
-    $kask = $yhendus->prepare("SELECT id,tantsupaar, punktid,ava_paev,kommentaarid FROM tantsud where avalik=1 ");
-    $kask->bind_result($id, $tantsupaar, $punktid, $paev, $komment);
-    $kask->execute();
-    while ($kask->fetch()) {
-        echo "<tr>";
-        $tantsupaar = htmlspecialchars($tantsupaar);
-        echo "<td>" .$tantsupaar . '</td>';
-        echo "<td>" .$punktid . '</td>';
-        echo "<td>" .$paev . '</td>';
-        echo "<td>" .$komment . '</td>';
-        echo "<td>
+global $yhendus;
+$kask=$yhendus->prepare("SELECT id, tantsupaar, punktid, ava_paev, komentaarid FROM tantsud WHERE avalik=1");
+$kask->bind_result($id, $tantsupaar, $punktid, $paev, $komment);
+$kask->execute();
+while($kask->fetch()){
+    echo "<tr>";
+    $tantsupaar=htmlspecialchars($tantsupaar);
+    echo "<td>".$tantsupaar."</td>";
+    echo "<td>".$punktid."</td>";
+    echo "<td>".$paev."</td>";
+    echo "<td>".nl2br(htmlspecialchars($komment))."</td>";
 
-<form action ='?'>
-<input type='hidden' value='$id' name='uuskomment' >
-<input type='text' name='uuskomment' id='uuskomment'>
+    echo "<td>
+<form action='?'>
+        <input type='hidden'  value='$id' name='komment'>
+        <input type='text' name='uuskomment' id='uuskomment'>
         <input type='submit' value='OK'>
 </form>
-        
         ";
+    echo "<td><a href='?heatants=$id'>Lisa +1punkt</a></td>";
 
-        echo "<td><a href='?heatants=$id'>Lisa +1punkt</a></td>";
-        echo "<td><a href='?heatantsu=$id'>Lisa -1punkt</a></td>";
-        echo "<tr>";
-
-
-    }
-
-
-}
+    echo "</tr>";
+}}
 ?>
     <?php
     if(isAdmin()){ ?>
