@@ -28,7 +28,7 @@ if(isset($_REQUEST["komment"])){
         global $yhendus;
         $kask = $yhendus->prepare("Update tantsud SET kommentaarid= CONCAT(kommentaarid, ?) WHERE id=?");
         $kommentplus = $_REQUEST["uuskomment"] . "\n";
-        $kask->bind_param("i", $_REQUEST["komment"], $kommentplus);
+        $kask->bind_param("si", $kommentplus, $_REQUEST["komment"]);
         $kask->execute();
 
     }
@@ -140,11 +140,12 @@ if(isset($_SESSION['kasutaja'])){
     while ($kask->fetch()) {
         echo "<tr>";
         $tantsupaar = htmlspecialchars($tantsupaar);
-        echo "<td>" . $tantsupaar . '</td>';
-        echo "<td>" . $punktid . '</td>';
-        echo "<td>" . $paev . '</td>';
-        echo "<td>" . $komment . '</td>';
+        echo "<td>" .$tantsupaar . '</td>';
+        echo "<td>" .$punktid . '</td>';
+        echo "<td>" .$paev . '</td>';
+        echo "<td>" .$komment . '</td>';
         echo "<td>
+
 <form action ='?'>
 <input type='hidden' value='$id' name='uuskomment' >
 <input type='text' name='uuskomment' id='uuskomment'>
