@@ -1,172 +1,212 @@
 <?php
-require_once ("conf.php");
-session_start();
-// punktide lisamine
-if(isset($_REQUEST["heatants"])){
-    global $yhendus;
-    $kask=$yhendus->prepare("Update tantsud set punktid=punktid+1 where id=?");
-    $kask->bind_param("i", $_REQUEST["heatants"]);
-    $kask->execute();
-}
-if(isset($_REQUEST["heatantsu"])){
-    global $yhendus;
-    $kask=$yhendus->prepare("Update tantsud set punktid=punktid-1 where id=?");
-    $kask->bind_param("i", $_REQUEST["heatantsu"]);
-    $kask->execute();
-}
-if(isset($_REQUEST["paarinimi"]) && !empty($_REQUEST["paarinimi"]) && isAdmin()){
+require_once ('conf.php');
+global $yhendus;
+$sorttulp = "tantsupaar";
+$otsisona = "";
 
-    global $yhendus;
-    $kask=$yhendus->prepare("Insert into tantsud(tantsupaar, ava_paev) VALUES(?, NOW()) ");
-    $kask->bind_param("s", $_REQUEST["paarinimi"]);
-    $kask->execute();
-    //header("Localhost: $_SERVER[PHP_SELF]");
-    //$yhendus->close();
+if (isset($_REQUEST["sorttulp"])) {
+    $sorttulp = $_REQUEST["sorttulp"];
 }
-if(isset($_REQUEST["komment"])){
-    if(!empty($_REQUEST["uuskomment"])){
-        global $yhendus;
-        $kask = $yhendus->prepare("UPDATE tantsud SET komentaarid=CONCAT(komentaarid, ?) WHERE id=?");
-        $kommentplus=$_REQUEST["uuskomment"]."\n";
-        $kask->bind_param("si", $kommentplus, $_REQUEST["komment"]);
-        $kask->execute();
-        header("Location: $_SERVER[PHP_SELF]");
-        $yhendus->close();
-        //exit();
+if (isset($_REQUEST["otsisona"])) {
+    $otsisona = $_REQUEST["otsisona"];
+}
+
+function Sortirovka($sorttulp="tantsupaar", $otsisona=""){
+    global $yhendus;
+
+    $lubatudtulbad=array("tantsupaar", "punktid", "kommentaarid");
+    if(!in_array($sorttulp, $lubatudtulbad))
+    {
+        return "lubamatu tulp";
     }
+        if($sorttulp=="punktid")
+    {
+        $sorttulp="punktid";
+    }
+        if($sorttulp=="kommentaarid")
+    {
+        $sorttulp="kommentaarid";
+    }
+    $otsisona=addslashes(stripslashes($otsisona));
+    $kask=$yhendus->prepare("SELECT id, tantsupaar, punktid, kommentaarid  FROM tantsud
+       WHERE avalik=1
+        AND (tantsupaar LIKE '%$otsisona%' OR punktid LIKE '%$otsisona%' OR kommentaarid LIKE '%$otsisona%')
+       ORDER BY $sorttulp");
+    $kask->bind_result($id, $tantsupaar, $punktid, $kommentaarid);
+    $kask->execute();
+    $hoidla=array();
+    while($kask->fetch()){
+        $sort=new stdClass();
+        $sort->id=$id;
+        $sort->tantsupaar=htmlspecialchars($tantsupaar);
+        $sort->punktid=$punktid;
+        $sort->kommentaarid=htmlspecialchars($kommentaarid);
+
+        array_push($hoidla, $sort);
+    }
+    return $hoidla;
 }
 
-function isAdmin(){
-    return  isset ($_SESSION['onAdmin']) && $_SESSION['onAdmin'] ;
+$tantsud = Sortirovka($sorttulp, $otsisona);
+
+
+//Uue tantsupaari lisamine
+if (!empty($_REQUEST['paarinimi'])) {
+    global $yhendus;
+    $kask=$yhendus->prepare("INSERT INTO tantsud (tantsupaar, avaliku_paev) VALUES NOW()");
+    $kask->bind_param("ss", $_REQUEST['paarinimi']);
+    $kask->execute();
+
+    header("Location: $_SERVER[PHP_SELF]");
+
 }
+//kommentaaride lisamine
 
 
+//punktide lisamine
+if(isSet($_REQUEST['punkt'])){
+    global $yhendus;
+    $kask=$yhendus->prepare('
+UPDATE tantsud SET punktid=punktid+1 WHERE id=?');
+    $kask->bind_param("s", $_REQUEST['punkt']);
+    $kask->execute();
 
-
+    header("Location: $_SERVER[PHP_SELF]");
+}
 ?>
-<!doctype html>
-<html lang=est>
+<!DOCTYPE html>
+<html lang="et">
 <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" href="menu.css">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Tantsud tähtedege</title>
+    <title>TARpv22 tantsud</title>
+    <link rel="stylesheet" type="text/css" href="menu.css">
+    <style>
+        header {
+            padding: 60px;
+            text-align: center;
+            background: #333;
+            color: white;
+            font-size: 60px;
+        }
+        nav {
+            background-color: #333;
+            overflow: hidden;
+        }
+
+        nav a {
+            float: left;
+            color: #f2f2f2;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+            font-size: 17px;
+        }
+
+        nav a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+
+        nav a.active {
+            background-color: #04AA6D;
+            color: white;
+        }
+        table, th, td {
+            border: 1px solid;
+        }
+        table {
+            width: 100%;
+        }
+        table {
+            border-collapse: collapse;
+        }
+        table {
+            border: 1px solid;
+        }
+
+
+    </style>
 </head>
 <body>
 <header>
-    <h1>Tantsud tähtedega</h1>
-    <?php
-    if(isset($_SESSION['kasutaja'])){
-        ?>
-        <h1>Tere, <?="$_SESSION[kasutaja]"?></h1>
-        <a href="logout.php">Logi välja</a>
-        <?php
-    } else {
-        ?>
-        <a href="login.php">Logi sisse</a>
-        <?php
-    }
-    ?>
+    <h1>Tantsud TARpv22</h1>
+    <nav>
+        <ul>
+            <li>
+                <a href="haldusleht.php">Kasutaja leht</a>
+            </li>
+            <li>
+                <a href="admineht.php">Admin leht</a>
+            </li>
+        </ul>
+    </nav>
 </header>
-<style>
-    header {
-        padding: 20px;
-        text-align: center;
-        background: #333;
-        color: white;
-        font-size: 30px;
-    }
-    nav {
-        background-color: #333;
-        overflow: hidden;
-    }
-
-    nav a {
-        float: left;
-        color: #f2f2f2;
-        text-align: center;
-        padding: 14px 16px;
-        text-decoration: none;
-        font-size: 17px;
-    }
-
-    nav a:hover {
-        background-color: #ddd;
-        color: black;
-    }
-
-    nav a.active {
-        background-color: #04AA6D;
-        color: white;
-    }
-    table, th, td {
-        border: 1px solid;
-    }
-    table {
-        width: 50%;
-    }
-    table {
-        border-collapse: collapse;
-    }
-    table {
-        border: 1px solid;
-    }
-</style>
-
-<nav>
-        <a href="haldusleht.php">Kasutaja</a>
-        <a href="admineht.php">Admin</a>
-
-</nav>
-
-<h2> Punktide lisamine</h2>
-<?php
-if(isset($_SESSION['kasutaja'])){
-    ?>
 <table>
     <tr>
-        <th>Tantsupaari nimi</th>
-        <th>Punktid</th>
-        <th>Paev</th>
-        <th>Kommentaarid</th>
+        <th>
+            <a href="haldusleht.php">Tantsupaar</a>
+        </th>
+        <th>
+            <a href="haldusleht.php">Punktid</a>
+        </th>
+        <th>
+            Haldus
+        </th>
+        <th>
+            <a href="haldusleht.php">Kommentaarid</a>
+        </th>
+        <th>
+            Kommentaarid lisamine
+        </th>
+
 
     </tr>
-<?php
-global $yhendus;
-$kask=$yhendus->prepare("SELECT id, tantsupaar, punktid, ava_paev, komentaarid FROM tantsud WHERE avalik=1");
-$kask->bind_result($id, $tantsupaar, $punktid, $paev, $komment);
-$kask->execute();
-while($kask->fetch()){
-    echo "<tr>";
-    $tantsupaar=htmlspecialchars($tantsupaar);
-    echo "<td>".$tantsupaar."</td>";
-    echo "<td>".$punktid."</td>";
-    echo "<td>".$paev."</td>";
-    echo "<td>".nl2br(htmlspecialchars($komment))."</td>";
+        </form>
 
-    echo "<td>
+        <?php
+        // tabeli sisu näitamine
+        global $yhendus;
+        $kask=$yhendus->prepare('
+SELECT id, tantsupaar, punktid,kommentaarid FROM tantsud WHERE avalik=1');
+        $kask->bind_result($id, $tantsupaar, $punktid,$kommentaarid);
+        $kask->execute();
+        foreach ($tantsud as $tantsupaar):
+
+            echo  "<tr>";
+            echo "<td>".$tantsupaar->tantsupaar."</td>";
+            echo "<td>".$tantsupaar->punktid."</td>";
+            echo "<td>". "<a href='?punkt=$tantsupaar->id'>Lisa 1punkt</a>" ."</td>";
+            echo "<td>".nl2br($tantsupaar->kommentaarid)."</td>";
+            echo "<td>
 <form action='?'>
-        <input type='hidden'  value='$id' name='komment'>
-        <input type='text' name='uuskomment' id='uuskomment'>
-        <input type='submit' value='OK'>
+<input type='hidden' value='$tantsupaar->id' name='uuskomment'>
+<input type='text' name='komment'>
+<input type='submit' value='OK'>
 </form>
-        ";
-    echo "<td><a href='?heatants=$id'>Lisa +1punkt</a></td>";
+</td>";
 
-    echo "</tr>";
-}}
-?>
-    <?php
-    if(isAdmin()){ ?>
-    <form action="?">
-        <label for="paarinimi">Lisa uus paar</label>
-        <input type="text" name="paarinimi" id="paarinimi">
-        <input type="submit" value="Lisa paar">
-    </form>
-        <?php }  ?>
+            ?>
+        <?php endforeach; ?>
 </table>
+
+<div>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <center>
+        <h2>Tantsupaari lisamine</h2>
+        <form action="?">
+            <input type="text" placeholder="Tantsupaar" name="paarinimi">
+            <br>
+            <input type="submit" value="OK">
+
+        </form>
+    </center>
+</div>
 </body>
-</html>
-<?php
+
