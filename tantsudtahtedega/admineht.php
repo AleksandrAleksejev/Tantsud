@@ -1,154 +1,182 @@
 <?php
+require_once('conf.php');
 
-require_once ("conf.php");
-session_start();
-// punktide lisamine
-if(isset($_REQUEST["punktid0"])){
+
+if (isset($_REQUEST['punkt0'])) {
     global $yhendus;
-    $kask=$yhendus->prepare("Update tantsud set punktid=0 where id=?");
-    $kask->bind_param("i", $_REQUEST["punktid0"]);
+    $kask = $yhendus->prepare('
+UPDATE tantsud SET punktid=0 WHERE id=?');
+    $kask->bind_param("s", $_REQUEST['punkt0']);
     $kask->execute();
-}
-// peitmine
-if(isset($_REQUEST["peitmine"])){
-    global $yhendus;
-    $kask=$yhendus->prepare("Update tantsud set avalik=0 where id=?");
-    $kask->bind_param("i", $_REQUEST["peitmine"]);
-    $kask->execute();
-}
-// näitmine
-if(isset($_REQUEST["naitmine"])){
-    global $yhendus;
-    $kask=$yhendus->prepare("Update tantsud set avalik=1 where id=?");
-    $kask->bind_param("i", $_REQUEST["naitmine"]);
-    $kask->execute();
+
+    header("Location: $_SERVER[PHP_SELF]");
 }
 
+
+if (isset($_REQUEST['peitmine'])) {
+    global $yhendus;
+    $kask = $yhendus->prepare('
+UPDATE tantsud SET avalik=0 WHERE id=?');
+    $kask->bind_param("i", $_REQUEST['peitmine']);
+    $kask->execute();
+
+    header("Location: $_SERVER[PHP_SELF]");
+}
+
+
+if (isset($_REQUEST['naitamine'])) {
+    global $yhendus;
+    $kask = $yhendus->prepare('
+UPDATE tantsud SET avalik=1 WHERE id=?');
+    $kask->bind_param("i", $_REQUEST['naitamine']);
+    $kask->execute();
+
+    header("Location: $_SERVER[PHP_SELF]");
+}
+
+
+if (isset($_REQUEST["kustutusid"])) {
+    global $yhendus;
+    $kask = $yhendus->prepare("DELETE FROM tantsud WHERE id=?");
+    $kask->bind_param("s", $_REQUEST['kustutusid']);
+    $kask->execute();
+
+    header("Location: $_SERVER[PHP_SELF]");
+}
+
+
+if (isset($_REQUEST['komment0'])) {
+    global $yhendus;
+    $kask = $yhendus->prepare('
+UPDATE tantsud SET kommentaarid="" WHERE id=?');
+    $kask->bind_param("s", $_REQUEST['komment0']);
+    $kask->execute();
+
+    header("Location: $_SERVER[PHP_SELF]");
+}
 ?>
-<!doctype html>
-<html lang=est>
+<!DOCTYPE html>
+<html lang="et">
 <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" href="menu.css">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Tantsud tähtedege</title>
+    <title>TARpv21 tantsud</title>
+    <style>
+        header {
+            padding: 60px;
+            text-align: center;
+            background: #333;
+            color: white;
+            font-size: 60px;
+        }
+        nav {
+            background-color: #333;
+            overflow: hidden;
+        }
+
+        nav a {
+            float: left;
+            color: #f2f2f2;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+            font-size: 17px;
+        }
+
+        nav a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+
+        nav a.active {
+            background-color: #04AA6D;
+            color: white;
+        }
+        table, th, td {
+            border: 1px solid;
+        }
+        table {
+            width: 100%;
+        }
+        table {
+            border-collapse: collapse;
+        }
+        table {
+            border: 1px solid;
+        }
+    </style>
 </head>
 <body>
 <header>
-    <h1>Tantsud tähtedega</h1>
-    <?php
-    if(isset($_SESSION['kasutaja'])){
-        ?>
-        <h1>Tere, <?="$_SESSION[kasutaja]"?></h1>
-        <a href="logout.php">Logi välja</a>
-        <?php
-    } else {
-        ?>
-        <a href="login.php">Logi sisse</a>
-        <?php
-    }
-    ?>
+    <h1>Tantsud TARpv22</h1>
+    <nav>
+        <ul>
+            <li>
+                <a href="haldusleht.php">Kasutaja leht</a>
+            </li>
+            <li>
+                <a href="admineht.php">Admin leht</a>
+            </li>
+        </ul>
+    </nav>
 </header>
-<style>
-    header {
-        padding: 20px;
-        text-align: center;
-        background: #333;
-        color: white;
-        font-size: 30px;
-    }
-    nav {
-        background-color: #333;
-        overflow: hidden;
-    }
-
-    nav a {
-        float: left;
-        color: #f2f2f2;
-        text-align: center;
-        padding: 14px 16px;
-        text-decoration: none;
-        font-size: 17px;
-    }
-
-    nav a:hover {
-        background-color: #ddd;
-        color: black;
-    }
-
-    nav a.active {
-        background-color: #04AA6D;
-        color: white;
-    }
-    table, th, td {
-        border: 1px solid;
-    }
-    table {
-        width: 100%;
-    }
-    table {
-        border-collapse: collapse;
-    }
-    table {
-        border: 1px solid;
-    }
-</style>
-<nav>
-
-        <a href="haldusleht.php">Kasutaja</a>
-        <a href="admineht.php">Admin</a>
-
-</nav>
-<h2> Administrerimis Leht</h2>
-<?php
-if(isset($_SESSION['kasutaja'])){
-?>
 <table>
     <tr>
-        <th>Tantsupaari nimi</th>
-        <th>Punktid</th>
-        <th>Kuupaev</th>
-        <th>Komentaarid</th>
-        <th>Avalik</th>
-
+        <th>
+            Kustutamine
+        </th>
+        <th>
+            Tantsupaar
+        </th>
+        <th>
+            Punktid
+        </th>
+        <th>
+            Kommentaarid / kommentaari kustutamine
+        </th>
+        <th>
+            Avalikumistamise staatus
+        </th>
+        <th>
+            Avaliku päev
+        </th>
     </tr>
 
-<?php
+    <?php
     global $yhendus;
-    $kask = $yhendus->prepare("SELECT id,tantsupaar, punktid, ava_paev, komentaarid, avalik FROM tantsud ");
-    $kask->bind_result($id, $tantsupaar, $punktid, $paev, $komment, $avalik);
+    $kask = $yhendus->prepare('
+SELECT id, tantsupaar, punktid, kommentaarid, avaliku_paev, avalik FROM tantsud');
+    $kask->bind_result($id, $tantsupaar, $punktid, $kommentaarid, $avaliku_paev, $avalik);
     $kask->execute();
     while ($kask->fetch()) {
-        $tekst = "Naita";
-        $seisund = "naitmine";
-        $tekst2 = "Kasutaja ei naeb";
+        echo "<tr>";
+        ?>
+        <td><a href="?kustutusid=<?=$id ?>"
+               onclick="return confirm('Kas ikka soovid kustutada?')">Kustutada</a>
+        </td>
+        <?php
+        $tekst = 'Näita';
+        $seisund = 'naitamine';
+        $kasutajatekst = 'Kasutaja ei näe';
         if ($avalik == 1) {
-            $tekst = "Peida";
-            $seisund = "peitmine";
-            $tekst2 = "Kasutaja ei naeb";
+            $tekst = 'Peida';
+            $seisund = 'peitmine';
+            $kasutajatekst = 'Kasutaja näeb';
         }
+        echo "<td>" . $tantsupaar . "</td>";
+        echo "<td>" . $punktid . "<br><a href='?punkt0=$id'>Punktid nulliks</a></td>";
+        $kommentaarid = nl2br(htmlspecialchars($kommentaarid));
+        echo "<td>" . $kommentaarid . "<br><a href='?komment0=$id'>Kustuta kommenti</a></td>";
 
-        echo "<tr>";
-        $tantsupaar = htmlspecialchars($tantsupaar);
-        echo "<td>" . $tantsupaar . '</td>';
-        echo "<td>" . $punktid . '</td>';
-        echo "<td>" . $paev . '</td>';
-        echo "<td>" . $komment . '</td>';
-        echo "<td>" . $avalik . "/" . $tekst2 . "</td>";
+        echo "<td>$kasutajatekst<br>
+            <a href='?$seisund=$id'>$tekst</a><br>
+            
+            
+            </td>";
+        echo "<td>" . $avaliku_paev . "</td>";
 
-        echo "<td><a href='?punktid0=$id'>Punktid Nulliks!</a></td>";
-        echo "<td><a href='$seisund=$id'>$tekst</a></td>";
-        echo "<tr>";
-
+        echo "</tr>";
     }
-}
-?>
-
+    ?>
 </table>
 </body>
 </html>
-
-<!-- kasutaja 1. admin õigused: ei saa + 1 punkt ja - 1punkt ja üldse ei need lingid
-kasutaja 2. opilane õigused ei näe adminleht.php
